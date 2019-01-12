@@ -57,6 +57,8 @@ def runGame():
     direction = []
     apple = []
     stones = []
+    numApples = 3
+
     # create 2 worms with random start points
     for i in range(2):
         startx = random.randint(5, CELLWIDTH - 6)
@@ -67,8 +69,8 @@ def runGame():
         direction.append(RIGHT)
     
 
-    # Start with 3 apples in random places.
-    for i in range(3):
+    # Start with apples in random places.
+    for i in range(numApples):
         apple.append(getRandomLocation())
 
     while True: # main game loop
@@ -152,19 +154,18 @@ def runGame():
             for wormBody in wormCoords[i][1:]:
                 if wormBody['x'] == wormCoords[(i+1)%2][HEAD]['x'] and wormBody['y'] == wormCoords[(i+1)%2][HEAD]['y']:
                     return # game over
+            # check for stone skins
             if wormCoords[i][HEAD] in stones:
                     return # game over
 
 
             # check if worm has eaten an apple
-            if wormCoords[i][HEAD]['x'] == apple[0]['x'] and wormCoords[i][HEAD]['y'] == apple[0]['y']:
-                # don't remove worm's tail segment
-                apple[0] = getRandomLocation() # set a new apple somewhere
-            elif wormCoords[i][HEAD]['x'] == apple[1]['x'] and wormCoords[i][HEAD]['y'] == apple[1]['y']:
-                apple[1] = getRandomLocation() # set a new apple somewhere
-            elif wormCoords[i][HEAD]['x'] == apple[2]['x'] and wormCoords[i][HEAD]['y'] == apple[2]['y']:
-                apple[2] = getRandomLocation() # set a new apple somewhere
-            else:
+            eat = False
+            for a in range(numApples):
+                if wormCoords[i][HEAD]['x'] == apple[a]['x'] and wormCoords[i][HEAD]['y'] == apple[a]['y']:
+                    eat = True # don't remove worm's tail segment
+                    apple[a] = getRandomLocation() # set a new apple somewhere
+            if not eat:
                 del wormCoords[i][-1] # remove worm's tail segment
 
         
@@ -173,7 +174,7 @@ def runGame():
         for i in range(2):
             drawWorm(i, wormCoords[i])
             drawScore(i, len(wormCoords[i]) - 3)
-        for i in range(3):
+        for i in range(numApples):
             drawApple(apple[i])
         drawStones(stones)
         pygame.display.update()
