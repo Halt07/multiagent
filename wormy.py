@@ -262,7 +262,7 @@ def drawScore(worm, score):
     scoreSurf = BASICFONT.render('Score: %s' % (score), True, WHITE)
     scoreRect = scoreSurf.get_rect()
     if worm == 0:
-        scoreRect.topleft = (120, 10)
+        scoreRect.topleft = (60, 10)
     else:
         scoreRect.topleft = (WINDOWWIDTH - 120, 10)
     DISPLAYSURF.blit(scoreSurf, scoreRect)
