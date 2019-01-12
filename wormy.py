@@ -164,7 +164,12 @@ def runGame():
             for a in range(numApples):
                 if wormCoords[i][HEAD]['x'] == apple[a]['x'] and wormCoords[i][HEAD]['y'] == apple[a]['y']:
                     eat = True # don't remove worm's tail segment
-                    apple[a] = getRandomLocation() # set a new apple somewhere
+                    newLocation = getRandomLocation()
+                     # if new location is already occupied by a stone wall or apple
+                     # find an unoccupied location
+                    while newLocation in stones or newLocation in apples:
+                        newLocation = getRandomLocation()
+                    apple[a] = newLocation  # set a new apple somewhere
             if not eat:
                 del wormCoords[i][-1] # remove worm's tail segment
 
