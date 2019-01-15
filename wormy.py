@@ -27,6 +27,7 @@ GRAY      = ( 80,  80,  80)
 DARKGRAY  = ( 40,  40,  40)
 RATTLEDARK= (139,  73,  28)
 RATTLELIGHT=(255, 205, 110)
+GOLD      = (255, 215,   0)
 BGCOLOR = BLACK
 
 UP = 'up'
@@ -58,6 +59,9 @@ def runGame():
     apple = []
     stones = []
     numApples = 3
+    goldenApplePresent = False
+    goldenApple = getRandomLocation()
+    goldTimer = 1
 
     # create 2 worms with random start points
     for i in range(2):
@@ -129,7 +133,7 @@ def runGame():
                     
 
         
-        for i in range(2): # 2 worms
+        for i in range(len(wormCoords)): # 2 worms
             
             # move the worm by adding a segment in the direction it is moving
             if direction[i] == UP:
@@ -148,11 +152,11 @@ def runGame():
                 return # game over
             # check self
             for wormBody in wormCoords[i][1:]:
-                if wormBody['x'] == wormCoords[i][HEAD]['x'] and wormBody['y'] == wormCoords[i][HEAD]['y']:
+                if wormBody == wormCoords[i][HEAD]:
                     return # game over
             # check other worm
             for wormBody in wormCoords[i][1:]:
-                if wormBody['x'] == wormCoords[(i+1)%2][HEAD]['x'] and wormBody['y'] == wormCoords[(i+1)%2][HEAD]['y']:
+                if wormBody == wormCoords[(i+1)%2][HEAD]:
                     return # game over
             # check for stone skins
             if wormCoords[i][HEAD] in stones:
@@ -162,25 +166,52 @@ def runGame():
             # check if worm has eaten an apple
             eat = False
             for a in range(numApples):
-                if wormCoords[i][HEAD]['x'] == apple[a]['x'] and wormCoords[i][HEAD]['y'] == apple[a]['y']:
+                if wormCoords[i][HEAD] == apple[a]:
                     eat = True # don't remove worm's tail segment
                     newLocation = getRandomLocation()
-                     # if new location is already occupied by a stone wall or apple
-                     # find an unoccupied location
-                    while newLocation in stones or newLocation in apples:
+                    # if new location is already occupied by a stone wall or apple
+                    # find an unoccupied location
+                    while newLocation in stones or newLocation in apple:
                         newLocation = getRandomLocation()
                     apple[a] = newLocation  # set a new apple somewhere
+            if goldenApplePresent:
+                if wormCoords[i][HEAD] == goldenApple:
+                    eat = True
+                    goldenApplePresent = False
+                    goldTimer = 1
+                    # temp speed up and increase in score
+                    if direction[i] == UP:
+                        newHead = {'x': wormCoords[i][HEAD]['x'], 'y': wormCoords[i][HEAD]['y'] - 1}
+                    elif direction[i] == DOWN:
+                        newHead = {'x': wormCoords[i][HEAD]['x'], 'y': wormCoords[i][HEAD]['y'] + 1}
+                    elif direction[i] == LEFT:
+                        newHead = {'x': wormCoords[i][HEAD]['x'] - 1, 'y': wormCoords[i][HEAD]['y']}
+                    elif direction[i] == RIGHT:
+                        newHead = {'x': wormCoords[i][HEAD]['x'] + 1, 'y': wormCoords[i][HEAD]['y']}
+                    wormCoords[i].insert(0, newHead)
             if not eat:
                 del wormCoords[i][-1] # remove worm's tail segment
 
+        goldTimer += 1
+        if goldTimer % 100 == 0:
+            if not goldenApplePresent:
+                newLocation = getRandomLocation()
+                # if new location is already occupied by a stone wall or apple
+                # find an unoccupied location
+                while newLocation in stones or newLocation in apple:
+                    newLocation = getRandomLocation()
+                goldenApple = newLocation  # set a golden apple somewhere
+            goldenApplePresent = not goldenApplePresent
         
         DISPLAYSURF.fill(BGCOLOR)
         drawGrid()
-        for i in range(2):
+        for i in range(len(wormCoords)): # draw all worms
             drawWorm(i, wormCoords[i])
             drawScore(i, len(wormCoords[i]) - 3)
         for i in range(numApples):
             drawApple(apple[i])
+        if goldenApplePresent:
+            drawGoldApple(goldenApple)
         drawStones(stones)
         pygame.display.update()
         FPSCLOCK.tick(FPS)
@@ -275,7 +306,7 @@ def drawScore(worm, score):
 
 
 def drawWorm(worm, wormCoords):
-    if worm == 0:
+    if worm % 2 == 0:
         body = RATTLEDARK
         diamond = RATTLELIGHT
     else:
@@ -296,6 +327,12 @@ def drawApple(coord):
     y = coord['y'] * CELLSIZE
     appleRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
     pygame.draw.rect(DISPLAYSURF, RED, appleRect)
+
+def drawGoldApple(coord):
+    x = coord['x'] * CELLSIZE
+    y = coord['y'] * CELLSIZE
+    appleRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
+    pygame.draw.rect(DISPLAYSURF, GOLD, appleRect)
 
 def drawStones(stoneCoords):
     for coord in stoneCoords:
