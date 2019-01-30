@@ -32,6 +32,60 @@ LEFT = 'left'
 RIGHT = 'right'
 
 HEAD = 0 # syntactic sugar: index of the worm's head
+class Roomba:
+    def __init__(self, x, y):
+        self.x = x;
+        self.y = y;
+        self.charger = {'x': 0, 'y': 0}
+        self.direction = DOWN
+
+    def findRoomSize(self):
+        pass
+
+class Obstacle:
+    def __init__(self, x, y, move):
+        self.x = x
+        self.y = y
+        self.movable = move
+        self.direction = UP
+
+    def __changeDirection(self):
+        num = random.randint(0,8)
+        if(num == 0):
+            self.direction = UP
+        elif(num == 1):
+            self.direction = DOWN
+        elif(num == 2):
+            self.direction = LEFT
+        elif(num == 3):
+            self.direction = RIGHT
+        elif(num < 6):
+            self.direction = ''
+
+    def move(self, room):
+        if(self.movable):
+            if self.direction == UP and self.y-1 > -1 and room[self.x][self.y-1] is None:
+                room[self.x][self.y] = None
+                self.x = self.x
+                self.y = self.y - 1
+                room[self.x][self.y] = self
+            elif self.direction == DOWN and self.y+1 < CELLHEIGHT and room[self.x][self.y+1] is None:
+                room[self.x][self.y] = None
+                self.x = self.x 
+                self.y = self.y + 1
+                room[self.x][self.y] = self
+            elif self.direction == LEFT and self.x-1 > -1 and room[self.x-1][self.y] is None:
+                room[self.x][self.y] = None
+                self.x = self.x - 1
+                self.y = self.y
+                room[self.x][self.y] = self
+            elif self.direction == RIGHT and self.x+1 < CELLWIDTH and room[self.x+1][self.y] is None:
+                room[self.x][self.y] = None
+                self.x = self.x + 1
+                self.y = self.y
+                room[self.x][self.y] = self
+            self.__changeDirection()
+
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT
@@ -59,21 +113,34 @@ def runGame():
     goldenApple = getRandomLocation()
     goldTimer = 1
 
-    # create 2 worms with random start points
+    for i in range(CELLWIDTH):
+        stones.append([])
+        for j in range(CELLHEIGHT):
+            stones[i].append(None)
+
+    # create 7 obstacles with random start points
+    for i in range(7):
+        startx = random.randint(5, CELLWIDTH - 6)
+        starty = random.randint(5, CELLHEIGHT - 6)
+        while(not stones[startx][starty] is None):
+            startx = random.randint(5, CELLWIDTH - 6)
+            starty = random.randint(5, CELLHEIGHT - 6)
+        stones[startx][starty] = Obstacle(startx, starty, False)
+
+    # create 2 moving obstacles with random start points
     for i in range(2):
         startx = random.randint(5, CELLWIDTH - 6)
         starty = random.randint(5, CELLHEIGHT - 6)
-        wormCoords.append([{'x': startx,     'y': starty},
-                          {'x': startx - 1, 'y': starty},
-                          {'x': startx - 2, 'y': starty}])
-        direction.append(RIGHT)
-    
-
-    # Start with apples in random places.
-    for i in range(numApples):
-        apple.append(getRandomLocation())
+        while(not stones[startx][starty] is None):
+            startx = random.randint(5, CELLWIDTH - 6)
+            starty = random.randint(5, CELLHEIGHT - 6)
+        stones[startx][starty] = Obstacle(startx, starty, True)
 
     while True: # main game loop
+        for row in stones:
+            for obj in row:
+                if(not obj is None):
+                    obj.move(stones)
         for event in pygame.event.get(): # event handling loop
             if event.type == QUIT:
                 terminate()
@@ -204,11 +271,9 @@ def runGame():
         for i in range(len(wormCoords)): # draw all worms
             drawWorm(i, wormCoords[i])
             drawScore(i, len(wormCoords[i]) - 3)
-        for i in range(numApples):
-            drawApple(apple[i])
         if goldenApplePresent:
             drawGoldApple(goldenApple)
-        drawStones(stones)
+        drawObstacles(stones)
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
@@ -318,11 +383,12 @@ def drawWorm(worm, wormCoords):
         pygame.draw.rect(DISPLAYSURF, diamond, wormInnerSegmentRect)
 
 
-def drawApple(coord):
-    x = coord['x'] * CELLSIZE
-    y = coord['y'] * CELLSIZE
-    appleRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
-    pygame.draw.rect(DISPLAYSURF, RED, appleRect)
+def drawObj(obj, color):
+    if(not obj is None):
+        x = obj.x * CELLSIZE
+        y = obj.y * CELLSIZE
+        obRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
+        pygame.draw.rect(DISPLAYSURF, color, obRect)
 
 def drawGoldApple(coord):
     x = coord['x'] * CELLSIZE
@@ -330,14 +396,10 @@ def drawGoldApple(coord):
     appleRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
     pygame.draw.rect(DISPLAYSURF, GOLD, appleRect)
 
-def drawStones(stoneCoords):
-    for coord in stoneCoords:
-        x = coord['x'] * CELLSIZE
-        y = coord['y'] * CELLSIZE
-        stone = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
-        pygame.draw.rect(DISPLAYSURF, DARKGRAY, stone)
-        inStone = pygame.Rect(x + 4, y + 4, CELLSIZE - 8, CELLSIZE - 8)
-        pygame.draw.rect(DISPLAYSURF, GRAY, inStone)
+def drawObstacles(stoneCoords):
+    for row in stoneCoords:
+        for coord in row:
+            drawObj(coord,RED)
 
 
 def drawGrid():
