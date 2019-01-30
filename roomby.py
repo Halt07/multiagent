@@ -36,7 +36,8 @@ class Roomba:
     def __init__(self, x, y):
         self.x = x;
         self.y = y;
-        self.charger = {'x': 0, 'y': 0}
+        self.charger = {'x': x, 'y':y-1}
+        self.battery = 50
         self.direction = DOWN
 
     def findRoomSize(self):
@@ -48,6 +49,7 @@ class Obstacle:
         self.y = y
         self.movable = move
         self.direction = UP
+        self.lastmove=0
 
     def __changeDirection(self):
         num = random.randint(0,8)
@@ -62,8 +64,8 @@ class Obstacle:
         elif(num < 6):
             self.direction = ''
 
-    def move(self, room):
-        if(self.movable):
+    def move(self, room, thismove):
+        if(self.movable and thismove != self.lastmove):
             if self.direction == UP and self.y-1 > -1 and room[self.x][self.y-1] is None:
                 room[self.x][self.y] = None
                 self.x = self.x
@@ -85,6 +87,7 @@ class Obstacle:
                 self.y = self.y
                 room[self.x][self.y] = self
             self.__changeDirection()
+            self.lastmove = thismove
 
 
 def main():
@@ -137,10 +140,11 @@ def runGame():
         stones[startx][starty] = Obstacle(startx, starty, True)
 
     while True: # main game loop
+        thismove = random.randint(1,10000)
         for row in stones:
             for obj in row:
                 if(not obj is None):
-                    obj.move(stones)
+                    obj.move(stones, thismove)
         for event in pygame.event.get(): # event handling loop
             if event.type == QUIT:
                 terminate()
