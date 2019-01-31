@@ -5,8 +5,8 @@ import random, pygame, sys
 from pygame.locals import *
 
 FPS = 10
-WINDOWWIDTH = 780
-WINDOWHEIGHT = 540
+WINDOWWIDTH = 640
+WINDOWHEIGHT = 480
 CELLSIZE = 20
 assert WINDOWWIDTH % CELLSIZE == 0, "Window width must be a multiple of cell size."
 assert WINDOWHEIGHT % CELLSIZE == 0, "Window height must be a multiple of cell size."
@@ -255,6 +255,7 @@ def runGame():
     dirt = []
     stones = []
 
+    # Create room models of obstacle and dirt placement
     for i in range(CELLWIDTH):
         stones.append([])
         dirt.append([])
@@ -262,7 +263,7 @@ def runGame():
             stones[i].append(None)
             dirt[i].append(None)
 
-    # create 7 obstacles with random start points
+    # create 20 obstacles with random start points
     for i in range(20):
         start = getRandomLocation()
         while(not stones[start['x']][start['y']] is None):
@@ -276,34 +277,35 @@ def runGame():
             start = getRandomLocation()
         stones[start['x']][start['y']] = Obstacle(start['x'], start['y'], True)
 
-    # create 2 heavy dirt piles
-    for i in range(2):
+    # create heavy dirt piles
+    for i in range(5):
         start = getRandomLocation()
         while(not stones[start['x']][start['y']] is None) and (not dirt[start['x']][start['y']] is None):
             start = getRandomLocation()
         dirt[start['x']][start['y']] = Dirt(start['x'], start['y'], HEAVY)
 
-    # create 4 mid dirt piles
-    for i in range(4):
+    # create mid dirt piles
+    for i in range(8):
         start = getRandomLocation()
         while(not stones[start['x']][start['y']] is None) and (not dirt[start['x']][start['y']] is None):
             start = getRandomLocation()
         dirt[start['x']][start['y']] = Dirt(start['x'], start['y'], MID)
 
-    # create 6 light dirt piles
-    for i in range(6):
+    # create light dirt piles
+    for i in range(12):
         start = getRandomLocation()
         while(not stones[start['x']][start['y']] is None) and (not dirt[start['x']][start['y']] is None):
             start = getRandomLocation()
         dirt[start['x']][start['y']] = Dirt(start['x'], start['y'], LIGHT)
 
-
-    startx = random.randint(5, CELLWIDTH - 6)
-    starty = random.randint(5, CELLHEIGHT - 6)
-    while(not stones[startx][starty] is None):
+    #adjust num in range for additional roombas
+    for i in range(2):
         startx = random.randint(5, CELLWIDTH - 6)
         starty = random.randint(5, CELLHEIGHT - 6)
-    stones[startx][starty] = Roomba(startx, starty)
+        while(not stones[startx][starty] is None):
+            startx = random.randint(5, CELLWIDTH - 6)
+            starty = random.randint(5, CELLHEIGHT - 6)
+        stones[startx][starty] = Roomba(startx, starty)
 
     while True: # main game loop
         thismove = random.randint(1,10000)
@@ -442,6 +444,9 @@ def drawObj(obj, color):
         y = obj.y * CELLSIZE
         obRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
         pygame.draw.rect(DISPLAYSURF, color, obRect)
+        if isinstance(obj, Roomba) and not obj.charged:
+            obRect = pygame.Rect(x+4,y+4,CELLSIZE-8,CELLSIZE-8)
+            pygame.draw.rect(DISPLAYSURF, GRAY, obRect)
 
 def drawDirt(coord):
     if(coord.dirt == HEAVY):
