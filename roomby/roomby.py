@@ -407,8 +407,8 @@ def showGameOverScreen():
     overRect = overSurf.get_rect()
     timeRect = timeSurf.get_rect()
     gameRect.midtop = (WINDOWWIDTH / 2, 10)
-    overRect.midtop = (WINDOWWIDTH / 2, gameRect.height + 10 + 15)
-    timeRect.midtop = (WINDOWWIDTH / 2, gameRect.height + overRect.height + 10 + 30)
+    overRect.midtop = (WINDOWWIDTH / 2, gameRect.height + 10 + 10)
+    timeRect.midtop = (WINDOWWIDTH / 2, gameRect.height + overRect.height + 10 + 20)
 
     DISPLAYSURF.blit(gameSurf, gameRect)
     DISPLAYSURF.blit(overSurf, overRect)
