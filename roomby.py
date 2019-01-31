@@ -51,6 +51,8 @@ class Roomba:
         self.direction = DOWN
         self.lastmove = 0
         self.lastposition = {'x': self.x, 'y': self.y}
+        self.stuck = False
+        self.avoidcounter = 0
 
     def findRoomSize(self, room):
         pass
@@ -73,6 +75,18 @@ class Roomba:
             return self.__leftright()
         return self.__updown()
 
+    def __stuck(self):
+        if(self.direction == UP):
+            self.direction = self.__randdir()
+        elif(self.direction == RIGHT):
+            self.direction = self.__randdir()
+        elif(self.direction == DOWN):
+            self.direction = self.__randdir()
+        elif(self.direction == LEFT):
+            self.direction = self.__randdir()
+        if(self.avoidcounter > 7):
+            self.avoidcounter = 0
+
     def __avoidOb(self):
         if(self.direction == UP):
             self.direction = self.__leftright()
@@ -82,7 +96,10 @@ class Roomba:
             self.direction = self.__leftright()
         elif(self.direction == LEFT):
             self.direction = self.__updown()
-        print('avoid')
+        self.avoidcounter += 1
+        print(self.avoidcounter)
+        if(self.avoidcounter > 3):
+            self.__stuck()
         
     def __turn(self):
         if(self.charged):
@@ -138,6 +155,7 @@ class Roomba:
                 self.battery += 1
                 if(self.battery >= MAXCHARGE):
                     self.charged = True
+                    self.direction = self.__randdir()
             else:
                 self.__turn()
                 if(self.lastposition['x'] == self.x and self.lastposition['y'] == self.y):
@@ -191,8 +209,18 @@ class Obstacle:
             self.lastmove = thismove
 
 class Dirt:
-    def __init__(self, amount):
-        pass
+    def __init__(self, x, y, amount):
+        self.x = x
+        self.y = y
+        self.dirt = amount
+
+    def clean(self):
+        if(self.dirt == HEAVY):
+            self.dirt = MID
+        elif(self.dirt == MID):
+            self.dirt = LIGHT
+        else:
+            self = None
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT
@@ -211,9 +239,7 @@ def main():
 
 def runGame():
     # initialize lists to contain the game "objects"
-    wormCoords = []
-    direction = []
-    apple = []
+    dirt = []
     stones = []
     numApples = 3
     goldenApplePresent = False
@@ -222,26 +248,46 @@ def runGame():
 
     for i in range(CELLWIDTH):
         stones.append([])
+        dirt.append([])
         for j in range(CELLHEIGHT):
             stones[i].append(None)
+            dirt[i].append(None)
 
     # create 7 obstacles with random start points
     for i in range(20):
-        startx = random.randint(5, CELLWIDTH - 6)
-        starty = random.randint(5, CELLHEIGHT - 6)
-        while(not stones[startx][starty] is None):
-            startx = random.randint(5, CELLWIDTH - 6)
-            starty = random.randint(5, CELLHEIGHT - 6)
-        stones[startx][starty] = Obstacle(startx, starty, False)
+        start = getRandomLocation()
+        while(not stones[start['x']][start['y']] is None):
+            start = getRandomLocation()
+        stones[start['x']][start['y']] = Obstacle(start['x'], start['y'], False)
 
     # create 2 moving obstacles with random start points
     for i in range(2):
-        startx = random.randint(5, CELLWIDTH - 6)
-        starty = random.randint(5, CELLHEIGHT - 6)
-        while(not stones[startx][starty] is None):
-            startx = random.randint(5, CELLWIDTH - 6)
-            starty = random.randint(5, CELLHEIGHT - 6)
-        stones[startx][starty] = Obstacle(startx, starty, True)
+        start = getRandomLocation()
+        while(not stones[start['x']][start['y']] is None):
+            start = getRandomLocation()
+        stones[start['x']][start['y']] = Obstacle(start['x'], start['y'], True)
+
+    # create 2 heavy dirt piles
+    for i in range(2):
+        start = getRandomLocation()
+        while(not stones[start['x']][start['y']] is None) and (not dirt[start['x']][start['y']] is None):
+            start = getRandomLocation()
+        dirt[start['x']][start['y']] = Dirt(start['x'], start['y'], HEAVY)
+
+    # create 4 mid dirt piles
+    for i in range(4):
+        start = getRandomLocation()
+        while(not stones[start['x']][start['y']] is None) and (not dirt[start['x']][start['y']] is None):
+            start = getRandomLocation()
+        dirt[start['x']][start['y']] = Dirt(start['x'], start['y'], MID)
+
+    # create 6 light dirt piles
+    for i in range(6):
+        start = getRandomLocation()
+        while(not stones[start['x']][start['y']] is None) and (not dirt[start['x']][start['y']] is None):
+            start = getRandomLocation()
+        dirt[start['x']][start['y']] = Dirt(start['x'], start['y'], LIGHT)
+
 
     startx = random.randint(5, CELLWIDTH - 6)
     starty = random.randint(5, CELLHEIGHT - 6)
@@ -260,134 +306,24 @@ def runGame():
             if event.type == QUIT:
                 terminate()
             elif event.type == KEYDOWN:
-                # worm 0 movement
-                if (event.key == K_LEFT) and direction[0] != RIGHT:
-                    direction[0] = LEFT
-                elif (event.key == K_RIGHT) and direction[0] != LEFT:
-                    direction[0] = RIGHT
-                elif (event.key == K_UP) and direction[0] != DOWN:
-                    direction[0] = UP
-                elif (event.key == K_DOWN) and direction[0] != UP:
-                    direction[0] = DOWN
-                # worm 1 movement
-                elif (event.key == K_a) and direction[1] != RIGHT:
-                    direction[1] = LEFT
-                elif (event.key == K_d) and direction[1] != LEFT:
-                    direction[1] = RIGHT
-                elif (event.key == K_w) and direction[1] != DOWN:
-                    direction[1] = UP
-                elif (event.key == K_s) and direction[1] != UP:
-                    direction[1] = DOWN
-                # move both worms
-                elif (event.key == K_KP4):
-                    if direction[0] != RIGHT:
-                        direction[0] = LEFT
-                    if direction[1] != RIGHT:
-                        direction[1] = LEFT
-                elif (event.key == K_KP6):
-                    if direction[0] != LEFT:
-                        direction[0] = RIGHT
-                    if direction[1] != LEFT:
-                        direction[1] = RIGHT
-                elif (event.key == K_KP8):
-                    if direction[0] != DOWN:
-                        direction[0] = UP
-                    if direction[1] != DOWN:
-                        direction[1] = UP
-                elif (event.key == K_KP2):
-                    if direction[0] != UP:
-                        direction[0] = DOWN
-                    if direction[1] != UP:
-                        direction[1] = DOWN
-                # shed skin
-                elif (event.key == K_RSHIFT):
-                    for segment in wormCoords[0]:
-                        stones.append(segment)
-                elif (event.key == K_e):
-                    for segment in wormCoords[1]:
-                        stones.append(segment)
+                if (event.key == K_SPACE):
+                    pass
                 elif event.key == K_ESCAPE:
                     terminate()
-                    
-
-        
-        for i in range(len(wormCoords)): # 2 worms
-            
-            # move the worm by adding a segment in the direction it is moving
-            if direction[i] == UP:
-                newHead = {'x': wormCoords[i][HEAD]['x'], 'y': wormCoords[i][HEAD]['y'] - 1}
-            elif direction[i] == DOWN:
-                newHead = {'x': wormCoords[i][HEAD]['x'], 'y': wormCoords[i][HEAD]['y'] + 1}
-            elif direction[i] == LEFT:
-                newHead = {'x': wormCoords[i][HEAD]['x'] - 1, 'y': wormCoords[i][HEAD]['y']}
-            elif direction[i] == RIGHT:
-                newHead = {'x': wormCoords[i][HEAD]['x'] + 1, 'y': wormCoords[i][HEAD]['y']}
-            wormCoords[i].insert(0, newHead)
-
-            # check if the worm has hit itself, other worm, stone obstacles, or the edge
-            # check wall
-            if wormCoords[i][HEAD]['x'] == -1 or wormCoords[i][HEAD]['x'] == CELLWIDTH or wormCoords[i][HEAD]['y'] == -1 or wormCoords[i][HEAD]['y'] == CELLHEIGHT:
-                return # game over
-            # check self
-            for wormBody in wormCoords[i][1:]:
-                if wormBody == wormCoords[i][HEAD]:
-                    return # game over
-            # check other worm
-            for wormBody in wormCoords[i][1:]:
-                if wormBody == wormCoords[(i+1)%2][HEAD]:
-                    return # game over
-            # check for stone skins
-            if wormCoords[i][HEAD] in stones:
-                    return # game over
-
-
-            # check if worm has eaten an apple
-            eat = False
-            for a in range(numApples):
-                if wormCoords[i][HEAD] == apple[a]:
-                    eat = True # don't remove worm's tail segment
-                    newLocation = getRandomLocation()
-                    # if new location is already occupied by a stone wall or apple
-                    # find an unoccupied location
-                    while newLocation in stones or newLocation in apple:
-                        newLocation = getRandomLocation()
-                    apple[a] = newLocation  # set a new apple somewhere
-            if goldenApplePresent:
-                if wormCoords[i][HEAD] == goldenApple:
-                    eat = True
-                    goldenApplePresent = False
-                    goldTimer = 1
-                    # temp speed up and increase in score
-                    if direction[i] == UP:
-                        newHead = {'x': wormCoords[i][HEAD]['x'], 'y': wormCoords[i][HEAD]['y'] - 1}
-                    elif direction[i] == DOWN:
-                        newHead = {'x': wormCoords[i][HEAD]['x'], 'y': wormCoords[i][HEAD]['y'] + 1}
-                    elif direction[i] == LEFT:
-                        newHead = {'x': wormCoords[i][HEAD]['x'] - 1, 'y': wormCoords[i][HEAD]['y']}
-                    elif direction[i] == RIGHT:
-                        newHead = {'x': wormCoords[i][HEAD]['x'] + 1, 'y': wormCoords[i][HEAD]['y']}
-                    wormCoords[i].insert(0, newHead)
-            if not eat:
-                del wormCoords[i][-1] # remove worm's tail segment
-
-        goldTimer += 1
-        if goldTimer % 100 == 0:
-            if not goldenApplePresent:
+            found = False
+            while found:
                 newLocation = getRandomLocation()
-                # if new location is already occupied by a stone wall or apple
-                # find an unoccupied location
-                while newLocation in stones or newLocation in apple:
-                    newLocation = getRandomLocation()
-                goldenApple = newLocation  # set a golden apple somewhere
-            goldenApplePresent = not goldenApplePresent
+                found = False
+                for row in stones:
+                    for obj in row:
+                        if(obj.x == newLocation['x'] and obj.y == newLocation['y']):
+                            found = True
+                if not found:
+                    dirt[newLocation['x']][newLocation['y']] = Dirt(HEAVY)
         
         DISPLAYSURF.fill(BGCOLOR)
         drawGrid()
-        for i in range(len(wormCoords)): # draw all worms
-            drawWorm(i, wormCoords[i])
-            drawScore(i, len(wormCoords[i]) - 3)
-        if goldenApplePresent:
-            drawGoldApple(goldenApple)
+        drawObstacles(dirt)
         drawObstacles(stones)
         pygame.display.update()
         FPSCLOCK.tick(FPS)
@@ -505,11 +441,21 @@ def drawObj(obj, color):
         obRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
         pygame.draw.rect(DISPLAYSURF, color, obRect)
 
-def drawGoldApple(coord):
-    x = coord['x'] * CELLSIZE
-    y = coord['y'] * CELLSIZE
-    appleRect = pygame.Rect(x, y, CELLSIZE, CELLSIZE)
-    pygame.draw.rect(DISPLAYSURF, GOLD, appleRect)
+def drawDirt(coord):
+    if(coord.dirt == HEAVY):
+        color = GOLD
+    elif(coord.dirt == MID):
+        color = RATTLELIGHT
+    elif(coord.dirt == LIGHT):
+        color = RATTLEDARK
+    x = coord.x * CELLSIZE
+    y = coord.y * CELLSIZE
+    spec = pygame.Rect(x+1, y+1, CELLSIZE/5, CELLSIZE/5)
+    pygame.draw.rect(DISPLAYSURF, color, spec)
+    spec = pygame.Rect(x+4, y+8, CELLSIZE/4, CELLSIZE/4)
+    pygame.draw.rect(DISPLAYSURF, color, spec)
+    spec = pygame.Rect(x+12, y+3, CELLSIZE/5, CELLSIZE/5)
+    pygame.draw.rect(DISPLAYSURF, color, spec)
 
 def drawObstacles(stoneCoords):
     for row in stoneCoords:
@@ -518,7 +464,8 @@ def drawObstacles(stoneCoords):
                 drawObj(coord,RED)
             elif isinstance(coord, Roomba):
                 drawObj(coord,GREEN)
-
+            elif isinstance(coord, Dirt):
+                drawDirt(coord)
 
 def drawGrid():
     for x in range(0, WINDOWWIDTH, CELLSIZE): # draw vertical lines
