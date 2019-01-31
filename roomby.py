@@ -55,7 +55,7 @@ class Roomba:
 
     def clean(self, room):
         if isinstance(room[self.x][self.y], Dirt):
-            room[self.x][self.y].clean()
+            room[self.x][self.y].clean(room)
 
     def sensor(self, room):
         if(self.charged):
@@ -227,13 +227,13 @@ class Dirt:
         self.y = y
         self.dirt = amount
 
-    def clean(self):
+    def clean(self, room):
         if(self.dirt == HEAVY):
             self.dirt = MID
         elif(self.dirt == MID):
             self.dirt = LIGHT
         else:
-            self = None
+            room[self.x][self.y] = None
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT
@@ -254,10 +254,6 @@ def runGame():
     # initialize lists to contain the game "objects"
     dirt = []
     stones = []
-    numApples = 3
-    goldenApplePresent = False
-    goldenApple = getRandomLocation()
-    goldTimer = 1
 
     for i in range(CELLWIDTH):
         stones.append([])
