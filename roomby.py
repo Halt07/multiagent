@@ -4,7 +4,7 @@
 import random, pygame, sys
 from pygame.locals import *
 
-FPS = 5
+FPS = 10
 WINDOWWIDTH = 780
 WINDOWHEIGHT = 540
 CELLSIZE = 20
@@ -37,13 +37,16 @@ HEAVY = 3
 MID = 2
 LIGHT = 1
 
+#Max Battery
+MAXCHARGE = 100
+
 HEAD = 0 # syntactic sugar: index of the worm's head
 class Roomba:
     def __init__(self, x, y):
         self.x = x;
         self.y = y;
         self.charger = {'x': x, 'y':y}
-        self.battery = 50
+        self.battery = MAXCHARGE
         self.charged = True
         self.direction = DOWN
         self.lastmove = 0
@@ -55,41 +58,56 @@ class Roomba:
     def __sensor(self, room):
         pass
     
+    def __leftright(self):
+        if(random.randint(0,1) == 0):
+            return LEFT
+        return RIGHT
+
+    def __updown(self):
+        if(random.randint(0,1) == 0):
+            return UP
+        return DOWN
+
+    def __randdir(self):
+        if(random.randint(0,1) == 0):
+            return self.__leftright()
+        return self.__updown()
+
     def __avoidOb(self):
         if(self.direction == UP):
-            self.direction = RIGHT
+            self.direction = self.__leftright()
         elif(self.direction == RIGHT):
-            self.direction = DOWN
+            self.direction = self.__updown()
         elif(self.direction == DOWN):
-            self.direction = LEFT
+            self.direction = self.__leftright()
         elif(self.direction == LEFT):
-            self.direction = UP
+            self.direction = self.__updown()
         print('avoid')
         
     def __turn(self):
         if(self.charged):
             if(self.direction == UP):
-                self.direction = RIGHT
+                self.direction = self.__leftright()
             elif(self.direction == DOWN):
                 self.direction = LEFT
             elif(self.direction == LEFT):
-                self.direction = UP
+                self.direction = self.__updown()
             elif(self.direction == RIGHT):
                 self.direction = DOWN
             else:
-                self.direction = RIGHT
+                self.direction = self.__randdir()
         else:
             if(self.x > self.charger['x']):
                 self.direction = LEFT
-            elif(self.x < self.charger['x']):
-                self.direction = RIGHT
             elif(self.y > self.charger['y']):
                 self.direction = UP
+            elif(self.x < self.charger['x']):
+                self.direction = RIGHT
             elif(self.y < self.charger['y']):
                 self.direction = DOWN
             else:
-                print(self.battery)
                 self.direction = ''
+                print(self.battery)
 
     def move(self, room, thismove):
         if(thismove != self.lastmove):
@@ -114,11 +132,11 @@ class Roomba:
             self.lastmove = thismove
             if(self.charged):
                 self.battery -= 1
-                if(self.battery == 0):
+                if(self.battery < 1):
                     self.charged = False
-            elif(self.x == self.charger['x'] and self.y == self.charger['y']):
+            elif((self.x+1 == self.charger['x'] or self.x-1 == self.charger['x'] or self.x == self.charger['x']) and (self.y+1 == self.charger['y'] or self.y-1 == self.charger['y'] or self.y == self.charger['y'])):
                 self.battery += 1
-                if(self.battery == 50):
+                if(self.battery >= MAXCHARGE):
                     self.charged = True
             else:
                 self.__turn()
