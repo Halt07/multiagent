@@ -4,7 +4,7 @@
 import random, pygame, sys
 from pygame.locals import *
 
-FPS = 2
+FPS = 5
 WINDOWWIDTH = 780
 WINDOWHEIGHT = 540
 CELLSIZE = 20
@@ -26,22 +26,96 @@ RATTLELIGHT=(255, 205, 110)
 GOLD      = (255, 215,   0)
 BGCOLOR = BLACK
 
+#Direction Constants
 UP = 'up'
 DOWN = 'down'
 LEFT = 'left'
 RIGHT = 'right'
+
+#Dirt Amount Constants
+HEAVY = 3
+MID = 2
+LIGHT = 1
 
 HEAD = 0 # syntactic sugar: index of the worm's head
 class Roomba:
     def __init__(self, x, y):
         self.x = x;
         self.y = y;
-        self.charger = {'x': x, 'y':y-1}
+        self.charger = {'x': x, 'y':y}
         self.battery = 50
+        self.charged = True
         self.direction = DOWN
+        self.lastmove = 0
 
-    def findRoomSize(self):
+    def findRoomSize(self, room):
         pass
+
+    def __sensor(self, room):
+        pass
+    
+    def __turn(self):
+        if(self.charged):
+            if(self.direction == UP):
+                self.direction = RIGHT
+            elif(self.direction == DOWN):
+                self.direction = LEFT
+            elif(self.direction == LEFT):
+                self.direction = UP
+            elif(self.direction == RIGHT):
+                self.direction = DOWN
+        else:
+            if(self.x > self.charger['x']):
+                print(self.x, self.charger['x'])
+                self.direction = LEFT
+            elif(self.x < self.charger['x']):
+                print(self.x, self.charger['x'])
+                self.direction = RIGHT
+            elif(self.y > self.charger['y']):
+                print(self.y, self.charger['y'])
+                self.direction = UP
+            elif(self.y < self.charger['y']):
+                print(self.y, self.charger['y'])
+                self.direction = DOWN
+            else:
+                print(self.battery)
+                self.direction = ''
+
+    def move(self, room, thismove):
+        if(thismove != self.lastmove):
+            if self.direction == UP and self.y-1 > -1 and room[self.x][self.y-1] is None:
+                room[self.x][self.y] = None
+                self.x = self.x
+                self.y = self.y - 1
+                room[self.x][self.y] = self
+            elif self.direction == DOWN and self.y+1 < CELLHEIGHT and room[self.x][self.y+1] is None:
+                room[self.x][self.y] = None
+                self.x = self.x
+                self.y = self.y + 1
+                room[self.x][self.y] = self
+            elif self.direction == LEFT and self.x-1 > -1 and room[self.x-1][self.y] is None:
+                room[self.x][self.y] = None
+                self.x = self.x - 1
+                self.y = self.y
+                room[self.x][self.y] = self
+            elif self.direction == RIGHT and self.x+1 < CELLWIDTH and room[self.x+1][self.y] is None:
+                room[self.x][self.y] = None
+                self.x = self.x + 1
+                self.y = self.y
+                room[self.x][self.y] = self
+            else:
+                self.__turn()
+            self.lastmove = thismove
+            if(self.charged):
+                self.battery -= 1
+                if(self.battery == 0):
+                    self.charged = False
+            elif(self.x == self.charger['x'] and self.y == self.charger['y']):
+                self.battery += 1
+                if(self.battery == 50):
+                    self.charged = True
+            else:
+                self.__turn()
 
 class Obstacle:
     def __init__(self, x, y, move):
@@ -49,20 +123,20 @@ class Obstacle:
         self.y = y
         self.movable = move
         self.direction = UP
-        self.lastmove=0
+        self.lastmove = 0
 
     def __changeDirection(self):
-        num = random.randint(0,8)
+        num = random.randint(0,8) #If none of below, continue in same direction as previous
         if(num == 0):
-            self.direction = UP
+            self.direction = UP #look up
         elif(num == 1):
-            self.direction = DOWN
+            self.direction = DOWN #look down
         elif(num == 2):
-            self.direction = LEFT
+            self.direction = LEFT #look left
         elif(num == 3):
-            self.direction = RIGHT
-        elif(num < 6):
-            self.direction = ''
+            self.direction = RIGHT #look right
+        elif(num <= 5):
+            self.direction = '' #don't move
 
     def move(self, room, thismove):
         if(self.movable and thismove != self.lastmove):
@@ -89,6 +163,9 @@ class Obstacle:
             self.__changeDirection()
             self.lastmove = thismove
 
+class Dirt:
+    def __init__(self, amount):
+        pass
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT
@@ -97,7 +174,7 @@ def main():
     FPSCLOCK = pygame.time.Clock()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
     BASICFONT = pygame.font.Font('freesansbold.ttf', 18)
-    pygame.display.set_caption('Squirmy')
+    pygame.display.set_caption('Roomby')
 
     showStartScreen()
     while True:
@@ -122,7 +199,7 @@ def runGame():
             stones[i].append(None)
 
     # create 7 obstacles with random start points
-    for i in range(7):
+    for i in range(20):
         startx = random.randint(5, CELLWIDTH - 6)
         starty = random.randint(5, CELLHEIGHT - 6)
         while(not stones[startx][starty] is None):
@@ -138,6 +215,13 @@ def runGame():
             startx = random.randint(5, CELLWIDTH - 6)
             starty = random.randint(5, CELLHEIGHT - 6)
         stones[startx][starty] = Obstacle(startx, starty, True)
+
+    startx = random.randint(5, CELLWIDTH - 6)
+    starty = random.randint(5, CELLHEIGHT - 6)
+    while(not stones[startx][starty] is None):
+        startx = random.randint(5, CELLWIDTH - 6)
+        starty = random.randint(5, CELLHEIGHT - 6)
+    stones[startx][starty] = Roomba(startx, starty)
 
     while True: # main game loop
         thismove = random.randint(1,10000)
@@ -403,7 +487,10 @@ def drawGoldApple(coord):
 def drawObstacles(stoneCoords):
     for row in stoneCoords:
         for coord in row:
-            drawObj(coord,RED)
+            if isinstance(coord, Obstacle):
+                drawObj(coord,RED)
+            elif isinstance(coord, Roomba):
+                drawObj(coord,GREEN)
 
 
 def drawGrid():
