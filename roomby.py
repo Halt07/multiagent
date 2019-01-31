@@ -47,6 +47,7 @@ class Roomba:
         self.charged = True
         self.direction = DOWN
         self.lastmove = 0
+        self.lastposition = {'x': self.x, 'y': self.y}
 
     def findRoomSize(self, room):
         pass
@@ -54,6 +55,17 @@ class Roomba:
     def __sensor(self, room):
         pass
     
+    def __avoidOb(self):
+        if(self.direction == UP):
+            self.direction = RIGHT
+        elif(self.direction == RIGHT):
+            self.direction = DOWN
+        elif(self.direction == DOWN):
+            self.direction = LEFT
+        elif(self.direction == LEFT):
+            self.direction = UP
+        print('avoid')
+        
     def __turn(self):
         if(self.charged):
             if(self.direction == UP):
@@ -64,18 +76,16 @@ class Roomba:
                 self.direction = UP
             elif(self.direction == RIGHT):
                 self.direction = DOWN
+            else:
+                self.direction = RIGHT
         else:
             if(self.x > self.charger['x']):
-                print(self.x, self.charger['x'])
                 self.direction = LEFT
             elif(self.x < self.charger['x']):
-                print(self.x, self.charger['x'])
                 self.direction = RIGHT
             elif(self.y > self.charger['y']):
-                print(self.y, self.charger['y'])
                 self.direction = UP
             elif(self.y < self.charger['y']):
-                print(self.y, self.charger['y'])
                 self.direction = DOWN
             else:
                 print(self.battery)
@@ -85,23 +95,19 @@ class Roomba:
         if(thismove != self.lastmove):
             if self.direction == UP and self.y-1 > -1 and room[self.x][self.y-1] is None:
                 room[self.x][self.y] = None
-                self.x = self.x
-                self.y = self.y - 1
+                self.y -= 1
                 room[self.x][self.y] = self
             elif self.direction == DOWN and self.y+1 < CELLHEIGHT and room[self.x][self.y+1] is None:
                 room[self.x][self.y] = None
-                self.x = self.x
-                self.y = self.y + 1
+                self.y += 1
                 room[self.x][self.y] = self
             elif self.direction == LEFT and self.x-1 > -1 and room[self.x-1][self.y] is None:
                 room[self.x][self.y] = None
-                self.x = self.x - 1
-                self.y = self.y
+                self.x -= 1
                 room[self.x][self.y] = self
             elif self.direction == RIGHT and self.x+1 < CELLWIDTH and room[self.x+1][self.y] is None:
                 room[self.x][self.y] = None
-                self.x = self.x + 1
-                self.y = self.y
+                self.x += 1
                 room[self.x][self.y] = self
             else:
                 self.__turn()
@@ -116,6 +122,9 @@ class Roomba:
                     self.charged = True
             else:
                 self.__turn()
+                if(self.lastposition['x'] == self.x and self.lastposition['y'] == self.y):
+                    self.__avoidOb()
+                self.lastposition = {'x': self.x, 'y': self.y}
 
 class Obstacle:
     def __init__(self, x, y, move):
