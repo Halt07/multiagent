@@ -38,7 +38,7 @@ MID = 2
 LIGHT = 1
 
 #Max Battery
-MAXCHARGE = 100
+MAXCHARGE = 200
 
 HEAD = 0 # syntactic sugar: index of the worm's head
 class Roomba:
@@ -54,7 +54,8 @@ class Roomba:
         self.avoidcounter = 0
 
     def clean(self, room):
-        pass
+        if isinstance(room[self.x][self.y], Dirt):
+            room[self.x][self.y].clean()
 
     def sensor(self, room):
         if(self.charged):
@@ -164,7 +165,7 @@ class Roomba:
                 if(self.battery < 1):
                     self.charged = False
             elif((self.x+1 == self.charger['x'] or self.x-1 == self.charger['x'] or self.x == self.charger['x']) and (self.y+1 == self.charger['y'] or self.y-1 == self.charger['y'] or self.y == self.charger['y'])):
-                self.battery += 1
+                self.battery += 2
                 if(self.battery >= MAXCHARGE):
                     self.charged = True
                     self.direction = self.__randdir()
@@ -316,6 +317,7 @@ def runGame():
                     obj.move(stones, thismove)
                 if isinstance(obj, Roomba):
                     obj.sensor(dirt)
+                    obj.clean(dirt)
         for event in pygame.event.get(): # event handling loop
             if event.type == QUIT:
                 terminate()
