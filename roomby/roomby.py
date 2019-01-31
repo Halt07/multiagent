@@ -142,7 +142,7 @@ class Roomba:
                 self.direction = DOWN
             else:
                 self.direction = ''
-                print(self.battery)
+                #print(self.battery)
 
     def move(self, room, thismove):
         if(thismove != self.lastmove):
