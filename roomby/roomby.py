@@ -1,7 +1,7 @@
 # Roomby (MultiAgent Systems program 2)
 # by Bryan Christensen A01694831
 
-import random, pygame, sys
+import random, pygame, sys, time
 from pygame.locals import *
 
 FPS = 10
@@ -12,6 +12,9 @@ assert WINDOWWIDTH % CELLSIZE == 0, "Window width must be a multiple of cell siz
 assert WINDOWHEIGHT % CELLSIZE == 0, "Window height must be a multiple of cell size."
 CELLWIDTH = int(WINDOWWIDTH / CELLSIZE)
 CELLHEIGHT = int(WINDOWHEIGHT / CELLSIZE)
+
+# Start time
+starttime = time.time()
 
 #             R    G    B
 WHITE     = (255, 255, 255)
@@ -39,7 +42,8 @@ LIGHT = 1
 
 #Max Battery
 MAXCHARGE = 200
-NUMBA = 5
+#Numba of Roomba
+NUMBA = 10
 
 HEAD = 0 # syntactic sugar: index of the worm's head
 class Roomba:
@@ -332,6 +336,8 @@ def runGame():
         drawObstacles(stones)
         pygame.display.update()
         FPSCLOCK.tick(FPS)
+        if(sum([isinstance(item, Dirt) for row in dirt for item in row]) == 0):
+            showGameOverScreen()
 
 def drawPressKeyMsg():
     pressKeySurf = BASICFONT.render('Press a key to play.', True, DARKGRAY)
@@ -392,16 +398,21 @@ def getRandomLocation():
 
 
 def showGameOverScreen():
+    endtime = int(time.time() - starttime)
     gameOverFont = pygame.font.Font('freesansbold.ttf', 150)
-    gameSurf = gameOverFont.render('Game', True, WHITE)
-    overSurf = gameOverFont.render('Over', True, WHITE)
+    gameSurf = gameOverFont.render('All', True, WHITE)
+    overSurf = gameOverFont.render('Clean!', True, WHITE)
+    timeSurf = gameOverFont.render('{:02d}:{:02d}:{:02d}'.format(endtime // 3600, (endtime % 3600 // 60), endtime % 60), True, WHITE)
     gameRect = gameSurf.get_rect()
     overRect = overSurf.get_rect()
+    timeRect = timeSurf.get_rect()
     gameRect.midtop = (WINDOWWIDTH / 2, 10)
     overRect.midtop = (WINDOWWIDTH / 2, gameRect.height + 10 + 25)
+    timeRect.midtop = (WINDOWWIDTH / 2, gameRect.height + overRect.height + 10 + 50)
 
     DISPLAYSURF.blit(gameSurf, gameRect)
     DISPLAYSURF.blit(overSurf, overRect)
+    DISPLAYSURF.blit(timeSurf, timeRect)
     drawPressKeyMsg()
     pygame.display.update()
     pygame.time.wait(500)
@@ -410,7 +421,7 @@ def showGameOverScreen():
     while True:
         if checkForKeyPress():
             pygame.event.get() # clear event queue
-            return
+            terminate()
 
 def drawScore(worm, score):
     scoreSurf = BASICFONT.render('Score: %s' % (score), True, WHITE)
