@@ -51,14 +51,26 @@ class Roomba:
         self.direction = DOWN
         self.lastmove = 0
         self.lastposition = {'x': self.x, 'y': self.y}
-        self.stuck = False
         self.avoidcounter = 0
 
-    def findRoomSize(self, room):
+    def clean(self, room):
         pass
 
-    def __sensor(self, room):
-        pass
+    def sensor(self, room):
+        if(self.charged):
+            dirty = False
+            if(self.x > 0) and (self.y > 0):
+                if not (room[self.x-1][self.y-1] is None and room[self.x][self.y-1] is None and room[self.x-1][self.y] is None):
+                    self.__stuck()
+            if(self.x < CELLWIDTH-1) and (self.y < CELLHEIGHT-1):
+                if not (room[self.x+1][self.y] is None and room[self.x][self.y+1] is None and room[self.x+1][self.y+1] is None):
+                    self.__stuck()
+            if(self.x < CELLWIDTH-1) and (self.y > 0):
+                if not (room[self.x+1][self.y] is None and room[self.x][self.y-1] is None and room[self.x+1][self.y-1] is None):
+                    self.__stuck()
+            if(self.x > 0) and (self.y < CELLHEIGHT-1):
+                if not (room[self.x-1][self.y] is None and room[self.x][self.y+1] is None and room[self.x-1][self.y+1] is None):
+                    self.__stuck()
     
     def __leftright(self):
         if(random.randint(0,1) == 0):
@@ -302,6 +314,8 @@ def runGame():
             for obj in row:
                 if(not obj is None):
                     obj.move(stones, thismove)
+                if isinstance(obj, Roomba):
+                    obj.sensor(dirt)
         for event in pygame.event.get(): # event handling loop
             if event.type == QUIT:
                 terminate()
@@ -310,16 +324,6 @@ def runGame():
                     pass
                 elif event.key == K_ESCAPE:
                     terminate()
-            found = False
-            while found:
-                newLocation = getRandomLocation()
-                found = False
-                for row in stones:
-                    for obj in row:
-                        if(obj.x == newLocation['x'] and obj.y == newLocation['y']):
-                            found = True
-                if not found:
-                    dirt[newLocation['x']][newLocation['y']] = Dirt(HEAVY)
         
         DISPLAYSURF.fill(BGCOLOR)
         drawGrid()
