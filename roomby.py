@@ -39,6 +39,7 @@ LIGHT = 1
 
 #Max Battery
 MAXCHARGE = 200
+NUMBA = 5
 
 HEAD = 0 # syntactic sugar: index of the worm's head
 class Roomba:
@@ -110,7 +111,7 @@ class Roomba:
         elif(self.direction == LEFT):
             self.direction = self.__updown()
         self.avoidcounter += 1
-        print(self.avoidcounter)
+        #print(self.avoidcounter)
         if(self.avoidcounter > 3):
             self.__stuck()
         
@@ -298,8 +299,8 @@ def runGame():
             start = getRandomLocation()
         dirt[start['x']][start['y']] = Dirt(start['x'], start['y'], LIGHT)
 
-    #adjust num in range for additional roombas
-    for i in range(2):
+    #adjust numba at top of document for additional roombas
+    for i in range(NUMBA):
         startx = random.randint(5, CELLWIDTH - 6)
         starty = random.randint(5, CELLHEIGHT - 6)
         while(not stones[startx][starty] is None):
